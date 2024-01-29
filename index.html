@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seis font editor</title>
+
+    <style>
+        body {
+            width: 100%;
+            background-color: #292929;
+        }
+
+        #editor {
+            margin: 30px auto;
+            display: block;
+        }
+
+        svg line, svg path {
+            opacity: 0.6;
+        }
+
+        svg line:hover, svg path:hover {
+            opacity: 1;
+        }
+
+        svg path[selected="true"], svg line[selected="true"] {
+            opacity: 1;
+            stroke: #f3f3e6;
+        }
+    </style> 
+</head>
+<body>
+    <svg id="editor"></svg>
+    
+    <script>
+        var svgContainer = document.getElementById("editor");
+
+        var rows = 4;
+        var cols = 3;
+
+        var dotRadius = 8;
+        var spacing = 150;
+
+        const width = (cols - 1) * spacing + dotRadius * cols;
+        const height = (rows - 1) * spacing + dotRadius * rows;
+
+        svgContainer.setAttribute("width", width);
+        svgContainer.setAttribute("height", height);
+
+        let lines = [];
+        let id = 0;
+
+        const curveColor = "#567a76";
+        const lineColor = "#7a566e";
+        const dotColor = "#c966c1";
+
+        const addLine = (x1, y1, x2, y2) => {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", x1);
+            line.setAttribute("y1", y1);
+            line.setAttribute("x2", x2);
+            line.setAttribute("y2", y2);
+            line.setAttribute("stroke", lineColor);
+            line.setAttribute("stroke-width", dotRadius);
+            line.setAttribute("id", id++);
+
+            line.addEventListener("click", (e) => {
+                if (line.getAttribute("selected") === "true") {
+                    line.setAttribute("selected", "false")
+                } else {
+                    line.setAttribute("selected", "true")
+                }
+            });
+
+            lines.push(line);
+            
+            return line;
+        }
+
+        const addPath = (d) => {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", d);
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", curveColor);
+            path.setAttribute("stroke-width", dotRadius);
+            path.setAttribute("id", id++);
+
+            path.addEventListener("click", (e) => {
+                if (path.getAttribute("selected") === "true") {
+                    path.setAttribute("selected", "false")
+                } else {
+                    path.setAttribute("selected", "true")
+                }
+            });
+
+            lines.push(path);
+
+            return path
+        }
+        
+        for (var i = 0; i < rows; i++) {
+            for (var j = 0; j < cols; j++) {
+                // Calculate the coordinates of each dot
+                var cx = j * spacing + dotRadius * 2;
+                var cy = i * spacing + dotRadius * 2;
+                var nx = (j + 1) * spacing + dotRadius * 2;
+                var ny = (i + 1) * spacing + dotRadius * 2;
+
+                if (i < rows - 2) {
+                    svgContainer.appendChild(addPath(`M${cy},${cx} a${spacing},${spacing} 0 0,0 ${spacing},${spacing}`));
+                    svgContainer.appendChild(addPath(`M${cy},${cx} a${spacing},${spacing} 0 0,1 ${spacing},${spacing}`));
+                    svgContainer.appendChild(addPath(`M${ny},${cx} a${spacing},${spacing} 0 0,1 -${spacing},${spacing}`));
+                    svgContainer.appendChild(addPath(`M${cy},${nx} a${spacing},${spacing} 0 0,1 ${spacing},-${spacing}`));
+                }
+
+                const right = addLine(cx, cy, nx, cy);
+                const bottom = addLine(cx, cy, cx, ny);
+                if (j < cols -1) svgContainer.appendChild(right);
+                if (i < rows -1) svgContainer.appendChild(bottom);
+            }
+        }
+
+        for (var i = 0; i < rows; i++) {
+            for (var j = 0; j < cols; j++) {
+                var cx = j * spacing + dotRadius * 2;
+                var cy = i * spacing + dotRadius * 2;
+
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", cx);
+                circle.setAttribute("cy", cy);
+                circle.setAttribute("r", dotRadius);
+                circle.setAttribute("fill", dotColor);
+                circle.setAttribute("id", j + i * cols)
+
+                svgContainer.appendChild(circle);
+            }
+        }
+
+       
+        
+    </script>
+</body>
+    
+</html>
