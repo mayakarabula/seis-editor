@@ -30,8 +30,7 @@
     </style> 
 </head>
 <body>
-    <svg id="editor"></svg>
-    
+    <svg id="editor"></svg>    
     <script>
         var svgContainer = document.getElementById("editor");
 
@@ -112,11 +111,30 @@
                     svgContainer.appendChild(addPath(`M${ny},${cx} a${spacing},${spacing} 0 0,1 -${spacing},${spacing}`));
                     svgContainer.appendChild(addPath(`M${cy},${nx} a${spacing},${spacing} 0 0,1 ${spacing},-${spacing}`));
                 }
+            }
+        }
 
-                const right = addLine(cx, cy, nx, cy);
-                const bottom = addLine(cx, cy, cx, ny);
-                if (j < cols -1) svgContainer.appendChild(right);
-                if (i < rows -1) svgContainer.appendChild(bottom);
+        for (var i = 0; i < rows; i++) {
+            for (var j = 0; j < cols; j++) {
+                // Calculate the coordinates of each dot
+                var cx = j * spacing + dotRadius * 2;
+                var cy = i * spacing + dotRadius * 2;
+                var nx = (j + 1) * spacing + dotRadius * 2;
+                var ny = (i + 1) * spacing + dotRadius * 2;
+
+                if (j > 0 && j < cols -1) {
+                    if (i < rows -1) svgContainer.appendChild(addLine(cx - dotRadius/2, cy, cx - dotRadius/2, ny));
+                    if (i < rows -1) svgContainer.appendChild(addLine(cx + dotRadius/2, cy, cx + dotRadius/2, ny));
+                } else {
+                    if (i < rows -1) svgContainer.appendChild(addLine(cx, cy, cx, ny));
+                }
+
+                if (i > 0 && i < rows -1) {
+                    if (j < cols -1) svgContainer.appendChild(addLine(cx, cy - dotRadius/2, nx, cy - dotRadius/2));
+                    if (j < cols -1) svgContainer.appendChild(addLine(cx, cy + dotRadius/2, nx, cy + dotRadius/2));
+                } else {
+                    if (j < cols -1) svgContainer.appendChild(addLine(cx, cy, nx, cy));
+                }
             }
         }
 
@@ -135,8 +153,6 @@
                 svgContainer.appendChild(circle);
             }
         }
-
-       
         
     </script>
 </body>
