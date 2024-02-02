@@ -10,6 +10,17 @@
             background-color: #292929;
         }
 
+        button {
+            font-family: monospace;
+            font-size: 17px;
+            border: 1px solid white;
+            background: #292929;
+            color: white;
+            padding: 10px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
         main {
             margin: 30px auto;
             display: flex;
@@ -75,6 +86,10 @@
             <div><span class="code" id="code-2">00000000</span><span class="code" id="code-3">00000000</span></div>
             <div><span class="code" id="code-4">00000000</span><span class="code" id="code-5">00000000</span></div>
             <div id="glyphs"></div>
+
+            <button onclick="exportSeis()">
+                copy to clipboard
+            </button>
         </div>
     </main>
 
@@ -334,7 +349,7 @@
             document.getElementById('g' + selectedGlyph).setAttribute("selected", "true");
             const seis = encodeToSeis('#g' + selectedGlyph);
             decodeSeis(seis, '#editor');
-            
+
             seis.forEach((seixel, index) => {
                 document.getElementById(`code-${index}`).innerHTML = seixel.join('');
             })
@@ -344,6 +359,40 @@
         document.getElementById('g0').setAttribute("selected", "true");
        }
 
+       const importSeis = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fontParam = urlParams.get('f');
+
+            if (fontParam) {
+                const font = fontParam.match(/.{1,12}/g)
+                    .map(glyph => {
+                        return glyph.match(/.{1,2}/g)
+                            .map(e => Number.parseInt(e, 16).toString(2).padStart(8, '0').split('').map(flag => +flag))
+                    })
+
+                font.forEach((seis, index) => {
+                    decodeSeis(seis, '#g' + index);
+                })
+
+                decodeSeis(font[0], '#editor');
+            }
+       }
+
+       importSeis()
+
+        const exportSeis = () => {
+            const glyphs = [...document.querySelectorAll('#glyphs svg')].map((el, index) => {
+                return encodeToSeis('#g' + index);
+            })
+
+            const hexValues = glyphs.map(g => {
+                return g.map(row => {
+                    return parseInt(row.join(''), 2).toString(16).padStart(2, '0')
+                }).join('')
+            })
+
+            navigator.clipboard.writeText(hexValues.join(''))
+        }
     </script>
 </body>
     
