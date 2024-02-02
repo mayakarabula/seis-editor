@@ -10,9 +10,29 @@
             background-color: #292929;
         }
 
-        #editor {
+        main {
             margin: 30px auto;
-            display: block;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #controls {
+            margin-left: 30px;
+            text-align: center;
+        }
+
+        .code {
+            color: #939393;
+            font-size: 30px;
+            display: inline-block;
+            font-family: monospace;
+            margin-right: 10px;
+        }
+
+        #glyphs {
+            margin-top: 15px;
         }
 
         svg line, svg path {
@@ -23,6 +43,19 @@
             opacity: 1;
         }
 
+        #glyphs svg {
+            border: 1px solid #515151;
+        }
+
+        svg[onlylines="true"] path, svg[onlylines="true"] line, svg[onlylines="true"] circle {
+            opacity: 0;
+        }
+
+        svg[onlylines="true"] path[selected="true"], svg[onlylines="true"] line[selected="true"] {
+            opacity: 1;
+            stroke: #f3f3e6;
+        }
+
         svg path[selected="true"], svg line[selected="true"] {
             opacity: 1;
             stroke: #f3f3e6;
@@ -30,9 +63,18 @@
     </style> 
 </head>
 <body>
-    <svg id="editor"></svg>    
+    <main>
+        <svg id="editor"></svg>
+        <div id="controls">
+            <div><span class="code" id="code-0">00000000</span><span class="code" id="code-1">00000000</span></div>
+            <div><span class="code" id="code-2">00000000</span><span class="code" id="code-3">00000000</span></div>
+            <div><span class="code" id="code-4">00000000</span><span class="code" id="code-5">00000000</span></div>
+            <div id="glyphs"></div>
+        </div>
+    </main>
+
     <script>
-        var svgContainer = document.getElementById("editor");
+        var editor = document.getElementById("editor");
 
         var rows = 4;
         var cols = 3;
@@ -43,8 +85,8 @@
         const width = (cols - 1) * spacing + dotRadius * cols;
         const height = (rows - 1) * spacing + dotRadius * rows;
 
-        svgContainer.setAttribute("width", width);
-        svgContainer.setAttribute("height", height);
+        editor.setAttribute("width", width);
+        editor.setAttribute("height", height);
 
         let lines = [];
         let id = 0;
@@ -53,107 +95,182 @@
         const lineColor = "#7a566e";
         const dotColor = "#c966c1";
 
-        const addLine = (x1, y1, x2, y2) => {
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", x1);
-            line.setAttribute("y1", y1);
-            line.setAttribute("x2", x2);
-            line.setAttribute("y2", y2);
-            line.setAttribute("stroke", lineColor);
-            line.setAttribute("stroke-width", dotRadius);
-            line.setAttribute("id", id++);
+        class Glyph {
+            constructor(dotRadius, spacing, svgContainer, attachListener) {
+                this.dotRadius = dotRadius;
+                this.attachListener = attachListener;
+                this.svgContainer = svgContainer;
+                this.spacing = spacing;
+            }
 
-            line.addEventListener("click", (e) => {
-                if (line.getAttribute("selected") === "true") {
-                    line.setAttribute("selected", "false")
-                } else {
-                    line.setAttribute("selected", "true")
+            renderGlyph = () => {
+                const { spacing, dotRadius } = this;
+
+                for (var j = 0; j < cols; j++) {
+                    for (var i = 0; i < rows; i++) {
+                        var cx = j * spacing + dotRadius * 2;
+                        var cy = i * spacing + dotRadius * 2;
+                        var nx = (j + 1) * spacing + dotRadius * 2;
+                        var ny = (i + 1) * spacing + dotRadius * 2;
+
+                        if (i < rows - 2) {
+                            this.svgContainer.appendChild(this.addPath(`M${cy},${cx} a${spacing},${spacing} 0 0,0 ${spacing},${spacing}`));
+                            this.svgContainer.appendChild(this.addPath(`M${ny},${cx} a${spacing},${spacing} 0 0,1 -${spacing},${spacing}`));
+                            this.svgContainer.appendChild(this.addPath(`M${cy},${cx} a${spacing},${spacing} 0 0,1 ${spacing},${spacing}`));
+                            this.svgContainer.appendChild(this.addPath(`M${cy},${nx} a${spacing},${spacing} 0 0,1 ${spacing},-${spacing}`));
+                        }
+                    }
                 }
-            });
 
-            lines.push(line);
-            
-            return line;
-        }
+                for (var i = 0; i < rows - 1; i++) {
+                    for (var j = 0; j < cols - 1; j++) {
+                        var cx = j * spacing + dotRadius * 2;
+                        var cy = i * spacing + dotRadius * 2;
+                        var nx = (j + 1) * spacing + dotRadius * 2;
+                        var ny = (i + 1) * spacing + dotRadius * 2;
+                        const halfWidth = dotRadius / 2;
 
-        const addPath = (d) => {
-            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", d);
-            path.setAttribute("fill", "none");
-            path.setAttribute("stroke", curveColor);
-            path.setAttribute("stroke-width", dotRadius);
-            path.setAttribute("id", id++);
+                        if (i < rows - 2) {
+                            ny -= halfWidth;
+                        }
+                        if (j < cols - 2) {
+                            nx -= halfWidth;
+                        }
+                        if (j == 1) {
+                            cx += halfWidth;
+                        }
+                        if (i == 1 || i == 2) {
+                            cy += halfWidth;
+                        }
 
-            path.addEventListener("click", (e) => {
-                if (path.getAttribute("selected") === "true") {
-                    path.setAttribute("selected", "false")
-                } else {
-                    path.setAttribute("selected", "true")
+                        this.svgContainer.appendChild(this.addLine(cx, cy, nx, cy));
+                        this.svgContainer.appendChild(this.addLine(nx, cy, nx, ny));
+                        this.svgContainer.appendChild(this.addLine(cx, ny, nx, ny));
+                        this.svgContainer.appendChild(this.addLine(cx, cy, cx, ny));
+                    }
                 }
-            });
 
-            lines.push(path);
+                for (var i = 0; i < rows; i++) {
+                    for (var j = 0; j < cols; j++) {
+                        var cx = j * spacing + dotRadius * 2;
+                        var cy = i * spacing + dotRadius * 2;
+                    
+                        const dot = this.addDot(cx, cy);
+                        dot.setAttribute("id", j + i * cols)
 
-            return path
-        }
-        
-        for (var i = 0; i < rows; i++) {
-            for (var j = 0; j < cols; j++) {
-                // Calculate the coordinates of each dot
-                var cx = j * spacing + dotRadius * 2;
-                var cy = i * spacing + dotRadius * 2;
-                var nx = (j + 1) * spacing + dotRadius * 2;
-                var ny = (i + 1) * spacing + dotRadius * 2;
-
-                if (i < rows - 2) {
-                    svgContainer.appendChild(addPath(`M${cy},${cx} a${spacing},${spacing} 0 0,0 ${spacing},${spacing}`));
-                    svgContainer.appendChild(addPath(`M${cy},${cx} a${spacing},${spacing} 0 0,1 ${spacing},${spacing}`));
-                    svgContainer.appendChild(addPath(`M${ny},${cx} a${spacing},${spacing} 0 0,1 -${spacing},${spacing}`));
-                    svgContainer.appendChild(addPath(`M${cy},${nx} a${spacing},${spacing} 0 0,1 ${spacing},-${spacing}`));
+                        this.svgContainer.appendChild(dot);
+                    }
                 }
             }
-        }
 
-        for (var i = 0; i < rows; i++) {
-            for (var j = 0; j < cols; j++) {
-                // Calculate the coordinates of each dot
-                var cx = j * spacing + dotRadius * 2;
-                var cy = i * spacing + dotRadius * 2;
-                var nx = (j + 1) * spacing + dotRadius * 2;
-                var ny = (i + 1) * spacing + dotRadius * 2;
-
-                if (j > 0 && j < cols -1) {
-                    if (i < rows -1) svgContainer.appendChild(addLine(cx - dotRadius/2, cy, cx - dotRadius/2, ny));
-                    if (i < rows -1) svgContainer.appendChild(addLine(cx + dotRadius/2, cy, cx + dotRadius/2, ny));
-                } else {
-                    if (i < rows -1) svgContainer.appendChild(addLine(cx, cy, cx, ny));
-                }
-
-                if (i > 0 && i < rows -1) {
-                    if (j < cols -1) svgContainer.appendChild(addLine(cx, cy - dotRadius/2, nx, cy - dotRadius/2));
-                    if (j < cols -1) svgContainer.appendChild(addLine(cx, cy + dotRadius/2, nx, cy + dotRadius/2));
-                } else {
-                    if (j < cols -1) svgContainer.appendChild(addLine(cx, cy, nx, cy));
-                }
-            }
-        }
-
-        for (var i = 0; i < rows; i++) {
-            for (var j = 0; j < cols; j++) {
-                var cx = j * spacing + dotRadius * 2;
-                var cy = i * spacing + dotRadius * 2;
-
+            addDot = (cx, cy) => {
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 circle.setAttribute("cx", cx);
                 circle.setAttribute("cy", cy);
-                circle.setAttribute("r", dotRadius);
+                circle.setAttribute("r", this.dotRadius);
                 circle.setAttribute("fill", dotColor);
-                circle.setAttribute("id", j + i * cols)
 
-                svgContainer.appendChild(circle);
+                return circle;
+            }
+
+            addLine = (x1, y1, x2, y2) => {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", x1);
+                line.setAttribute("y1", y1);
+                line.setAttribute("x2", x2);
+                line.setAttribute("y2", y2);
+                line.setAttribute("stroke", lineColor);
+                line.setAttribute("stroke-width", this.dotRadius);
+                line.setAttribute("id", id++);
+
+                if (this.attachListener) { 
+                    this.attachListener(line);
+                }
+
+                lines.push(line);
+                
+                return line;
+            }
+
+            addPath = (d, color = curveColor) => {
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", d);
+                path.setAttribute("fill", "none");
+                path.setAttribute("stroke", color);
+                path.setAttribute("stroke-width", this.dotRadius);
+                path.setAttribute("id", id++);
+
+                if (this.attachListener) { 
+                    this.attachListener(path);
+                }
+
+                lines.push(path);
+
+                return path
             }
         }
-        
+
+        const encodeToSeis = () => {
+            const seis = [...new Array(6)].map(() => [...new Array(8).fill(0)]);
+
+            const lines = [...document.querySelectorAll('#editor line[selected="true"]')]
+                .map(el => +el.getAttribute('id') - 24);
+            const curves = [...document.querySelectorAll('#editor path[selected="true"]')]
+                .map(el => +el.getAttribute('id'));
+
+            lines.forEach(l => {
+                const seixel = Math.floor(l / 4);
+                const pos = l % 4 + 4;
+                seis[seixel][pos] = 1;
+            })
+
+            curves.forEach(c => {
+                const seixel = Math.floor(c / 4);
+                const pos = c % 4;
+                seis[seixel][pos] = 1;
+            })
+
+            return seis;
+        }
+
+        const editorGlyph = new Glyph(dotRadius, spacing, editor, (element) => {
+            element.addEventListener("click", (e) => {
+                if (element.getAttribute("selected") === "true") {
+                    element.setAttribute("selected", "false")
+                } else {
+                    element.setAttribute("selected", "true")
+                }
+                const seis = encodeToSeis();
+
+                seis.forEach((seixel, index) => {
+                    document.getElementById(`code-${index}`).innerHTML = seixel.join('');
+                })
+            });
+        });
+        editorGlyph.renderGlyph();
+
+        const library = document.getElementById("glyphs");
+        const glyphW = (cols - 1) * 10 + 2 * cols;
+        const glyphH = (rows - 1) * 10 + 2 * rows;
+
+       for (let j=0; j < 8; j++) {
+        const divRow = document.createElement("div");
+
+        for (let i = 0; i < 16; i++) {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", glyphW);
+            svg.setAttribute("height", glyphH);
+            svg.setAttribute("onlylines", "true");
+            
+            const glyph = new Glyph(2, 10, svg);
+            glyph.renderGlyph();
+
+            divRow.appendChild(svg);
+        }
+
+        library.appendChild(divRow);
+       }
+    
     </script>
 </body>
     
