@@ -42,6 +42,12 @@
             margin-right: 10px;
         }
 
+        #editor-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
         #glyphs {
             margin-top: 15px;
         }
@@ -80,7 +86,12 @@
 </head>
 <body>
     <main>
-        <svg id="editor"></svg>
+        <div id="editor-container">
+            <svg id="editor"></svg>
+            <button onclick="clearGlyph('#editor'); clearGlyph('#g' + selectedGlyph)">
+                clear
+            </button>
+        </div>
         <div id="controls">
             <div><span class="code" id="code-0">00000000</span><span class="code" id="code-1">00000000</span></div>
             <div><span class="code" id="code-2">00000000</span><span class="code" id="code-3">00000000</span></div>
