@@ -316,6 +316,10 @@
                 selectedGlyph = i + j * 16;
                 const seis = encodeToSeis('#g' + selectedGlyph);
                 decodeSeis(seis, '#editor');
+
+                seis.forEach((seixel, index) => {
+                    document.getElementById(`code-${index}`).innerHTML = seixel.join('');
+                })
                 
                 svg.setAttribute("selected", "true");
             }
@@ -330,6 +334,10 @@
             document.getElementById('g' + selectedGlyph).setAttribute("selected", "true");
             const seis = encodeToSeis('#g' + selectedGlyph);
             decodeSeis(seis, '#editor');
+            
+            seis.forEach((seixel, index) => {
+                document.getElementById(`code-${index}`).innerHTML = seixel.join('');
+            })
         })
 
        document.onreadystatechange = () => {
