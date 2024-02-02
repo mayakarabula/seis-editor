@@ -45,6 +45,11 @@
 
         #glyphs svg {
             border: 1px solid #515151;
+            cursor: pointer;
+        }
+
+        #glyphs svg[selected="true"] {
+            border: 1px solid #c966c1;
         }
 
         svg[onlylines="true"] path, svg[onlylines="true"] line, svg[onlylines="true"] circle {
@@ -104,6 +109,8 @@
             }
 
             renderGlyph = () => {
+                id = 0;
+
                 const { spacing, dotRadius } = this;
 
                 for (var j = 0; j < cols; j++) {
@@ -192,11 +199,11 @@
                 return line;
             }
 
-            addPath = (d, color = curveColor) => {
+            addPath = (d) => {
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("d", d);
                 path.setAttribute("fill", "none");
-                path.setAttribute("stroke", color);
+                path.setAttribute("stroke", curveColor);
                 path.setAttribute("stroke-width", this.dotRadius);
                 path.setAttribute("id", id++);
 
@@ -210,12 +217,12 @@
             }
         }
 
-        const encodeToSeis = () => {
+        const encodeToSeis = (selector) => {
             const seis = [...new Array(6)].map(() => [...new Array(8).fill(0)]);
 
-            const lines = [...document.querySelectorAll('#editor line[selected="true"]')]
+            const lines = [...document.querySelectorAll(selector + ' line[selected="true"]')]
                 .map(el => +el.getAttribute('id') - 24);
-            const curves = [...document.querySelectorAll('#editor path[selected="true"]')]
+            const curves = [...document.querySelectorAll(selector + ' path[selected="true"]')]
                 .map(el => +el.getAttribute('id'));
 
             lines.forEach(l => {
@@ -233,6 +240,39 @@
             return seis;
         }
 
+        const decodeSeis = (seis, selector) => {
+            const lines = [...document.querySelectorAll(selector + ' line')];
+            const curves = [...document.querySelectorAll(selector + ' path')];
+
+            clearGlyph(selector)
+
+            lines.forEach((l, index) => {
+                const seixel = Math.floor(index / 4);
+                const pos = index % 4 + 4;
+                if (seis[seixel][pos] === 1) {
+                    l.setAttribute("selected", "true");
+                }
+            })
+
+            curves.forEach((c, index) => {
+                const seixel = Math.floor(index / 4);
+                const pos = index % 4;
+                if (seis[seixel][pos] === 1) {
+                    c.setAttribute("selected", "true");
+                }
+            })
+        }
+
+        const clearGlyph = (selector) => {
+            const lines = [...document.querySelectorAll(selector + ' line')];
+            const curves = [...document.querySelectorAll(selector + ' path')];
+
+            lines.forEach(l => l.setAttribute("selected", "false"));
+            curves.forEach(c => c.setAttribute("selected", "false"));
+        }
+
+        let selectedGlyph = 0;
+
         const editorGlyph = new Glyph(dotRadius, spacing, editor, (element) => {
             element.addEventListener("click", (e) => {
                 if (element.getAttribute("selected") === "true") {
@@ -240,11 +280,13 @@
                 } else {
                     element.setAttribute("selected", "true")
                 }
-                const seis = encodeToSeis();
+                const seis = encodeToSeis('#editor');
 
                 seis.forEach((seixel, index) => {
                     document.getElementById(`code-${index}`).innerHTML = seixel.join('');
                 })
+
+                decodeSeis(seis, '#g' + selectedGlyph)
             });
         });
         editorGlyph.renderGlyph();
@@ -261,16 +303,39 @@
             svg.setAttribute("width", glyphW);
             svg.setAttribute("height", glyphH);
             svg.setAttribute("onlylines", "true");
+            svg.setAttribute("id", "g" + (i + j * 16));
             
-            const glyph = new Glyph(2, 10, svg);
+            const glyph = new Glyph(1, 10, svg);
             glyph.renderGlyph();
 
             divRow.appendChild(svg);
+
+            svg.onclick = () => {
+                document.getElementById('g' + selectedGlyph).setAttribute("selected", "false");
+
+                selectedGlyph = i + j * 16;
+                const seis = encodeToSeis('#g' + selectedGlyph);
+                decodeSeis(seis, '#editor');
+                
+                svg.setAttribute("selected", "true");
+            }
         }
 
         library.appendChild(divRow);
        }
-    
+
+        document.body.addEventListener('keypress', (event) => {
+            document.getElementById('g' + selectedGlyph).setAttribute("selected", "false");
+            selectedGlyph = event.charCode;
+            document.getElementById('g' + selectedGlyph).setAttribute("selected", "true");
+            const seis = encodeToSeis('#g' + selectedGlyph);
+            decodeSeis(seis, '#editor');
+        })
+
+       document.onreadystatechange = () => {
+        document.getElementById('g0').setAttribute("selected", "true");
+       }
+
     </script>
 </body>
     
